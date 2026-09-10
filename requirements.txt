@@ -1,2 +1,4 @@
-# Dependencies will be added in the corresponding implementation stages.
-
+# 增加于阶段 3.1：PDF Loader 所需依赖。
+langchain==1.4.0
+langchain-community==0.4.2
+pypdf==6.18.0
