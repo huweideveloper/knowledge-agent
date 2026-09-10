@@ -1,0 +1,14 @@
+{
+  "document_id": "expense_policy_2026",
+  "title": "费用报销制度",
+  "department": "finance",
+  "category": "finance",
+  "version": "2026.1",
+  "effective_date": "2026-01-01",
+  "allowed_roles": [
+    "employee",
+    "manager",
+    "finance",
+    "admin"
+  ]
+}

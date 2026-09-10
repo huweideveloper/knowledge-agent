@@ -1,0 +1,15 @@
+{
+  "document_id": "vpn_manual_2026",
+  "title": "VPN 操作手册",
+  "department": "it",
+  "category": "it",
+  "version": "2026.1",
+  "effective_date": "2026-01-01",
+  "allowed_roles": [
+    "employee",
+    "manager",
+    "hr",
+    "finance",
+    "admin"
+  ]
+}

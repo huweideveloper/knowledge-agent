@@ -1,0 +1,15 @@
+{
+  "document_id": "leave_policy_2026",
+  "title": "请假管理制度",
+  "department": "hr",
+  "category": "hr",
+  "version": "2026.1",
+  "effective_date": "2026-01-01",
+  "allowed_roles": [
+    "employee",
+    "manager",
+    "hr",
+    "finance",
+    "admin"
+  ]
+}

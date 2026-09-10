@@ -1,0 +1,15 @@
+{
+  "document_id": "travel_policy_2026",
+  "title": "差旅管理制度",
+  "source_file": "差旅制度_2026.pdf",
+  "department": "finance",
+  "category": "travel",
+  "version": "2026.1",
+  "effective_date": "2026-01-01",
+  "allowed_roles": [
+    "employee",
+    "manager",
+    "finance",
+    "admin"
+  ]
+}

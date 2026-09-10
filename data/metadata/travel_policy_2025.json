@@ -1,0 +1,15 @@
+{
+  "document_id": "travel_policy_2025",
+  "title": "差旅管理制度",
+  "source_file": "差旅制度_2025.pdf",
+  "department": "finance",
+  "category": "travel",
+  "version": "2025.1",
+  "effective_date": "2025-01-01",
+  "allowed_roles": [
+    "employee",
+    "manager",
+    "finance",
+    "admin"
+  ]
+}
