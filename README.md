@@ -2,7 +2,7 @@
 
 企业内部知识库 Agent 项目。
 
-当前状态：已完成阶段 3.5。后续阶段按
+当前状态：已完成阶段 4.4。后续阶段按
 `enterprise-knowledge-agent-implementation-plan-v2.md` 逐步实现。
 
 ## 本地环境
