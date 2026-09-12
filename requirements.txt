@@ -8,3 +8,5 @@ langchain-text-splitters==1.1.2
 fastembed==0.8.0
 # 增加于阶段 7.1：Qdrant Python 客户端。
 qdrant-client==1.19.0
+# 增加于阶段 10.2：结构化 LLM 输出和 Citation 模型。
+pydantic==2.13.5

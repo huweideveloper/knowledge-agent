@@ -13,15 +13,17 @@ from app.vectorstore.qdrant_store import (
 
 
 # 增加于阶段 8.2：定义统一的检索结果对象。
+# 修改于阶段 10.1：显式保留 Citation 所需的 Chunk ID。
 @dataclass(frozen=True)
 class RetrievedChunk:
-    """表示一个带正文、相似度和来源信息的检索 Chunk。"""
+    """表示一个带正文、相似度和完整来源信息的检索 Chunk。"""
 
     content: str
     score: float
     source: str | None
     page: int | str | None
     metadata: dict[str, object]
+    chunk_id: str | None = None
 
 
 # 增加于阶段 8.2：把 Qdrant 返回的 ScoredPoint 转换为标准对象。
@@ -39,7 +41,8 @@ def _to_retrieved_chunk(point: object) -> RetrievedChunk:
         RetrievedChunk：包含正文、相似度分数、来源、页码和完整 Metadata 的标准对象。
 
     异常：
-        RuntimeError: Point 缺少合法 payload、正文或数值相似度分数时抛出。
+        RuntimeError: Point 缺少合法 payload、正文、source、page、chunk_id 或数值
+            相似度分数时抛出。
     """
     payload = getattr(point, "payload", None)
     if not isinstance(payload, Mapping):
@@ -53,18 +56,34 @@ def _to_retrieved_chunk(point: object) -> RetrievedChunk:
     if not isinstance(metadata_value, Mapping):
         raise RuntimeError("检索 Point 的 metadata 不是对象")
     metadata = dict(metadata_value)
-    chunk_id = payload.get("chunk_id")
-    if isinstance(chunk_id, str) and chunk_id and "chunk_id" not in metadata:
-        metadata["chunk_id"] = chunk_id
+    chunk_id_value = payload.get("chunk_id", metadata.get("chunk_id"))
+    chunk_id = (
+        chunk_id_value.strip()
+        if isinstance(chunk_id_value, str) and chunk_id_value.strip()
+        else None
+    )
+    if chunk_id is None:
+        raise RuntimeError("检索 Point 缺少非空 chunk_id")
+    metadata["chunk_id"] = chunk_id
 
     score = getattr(point, "score", None)
     if isinstance(score, bool) or not isinstance(score, (int, float)):
         raise RuntimeError("检索 Point 缺少数值相似度分数")
 
     source_value = metadata.get("source_file") or metadata.get("source")
-    source = source_value if isinstance(source_value, str) else None
+    source = source_value.strip() if isinstance(source_value, str) else None
+    if not source:
+        raise RuntimeError("检索 Point 缺少非空 source")
     page_value = metadata.get("page_label", metadata.get("page"))
-    page = page_value if isinstance(page_value, (int, str)) and not isinstance(page_value, bool) else None
+    page = (
+        page_value.strip()
+        if isinstance(page_value, str)
+        else page_value
+        if isinstance(page_value, int) and not isinstance(page_value, bool)
+        else None
+    )
+    if page is None or (isinstance(page, str) and not page):
+        raise RuntimeError("检索 Point 缺少合法 page")
 
     return RetrievedChunk(
         content=content,
@@ -72,6 +91,7 @@ def _to_retrieved_chunk(point: object) -> RetrievedChunk:
         source=source,
         page=page,
         metadata=metadata,
+        chunk_id=chunk_id,
     )
 
 
