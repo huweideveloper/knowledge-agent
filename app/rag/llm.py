@@ -9,6 +9,7 @@ from urllib import request as urllib_request
 from langchain_core.messages import BaseMessage
 
 from app.config import get_deepseek_api_key
+from app.rag.prompt import ABSTAIN_ANSWER
 
 
 # 增加于阶段 9.4：定义 DeepSeek OpenAI 兼容接口的默认连接参数。
@@ -162,18 +163,20 @@ class GroundedFallbackChatModel:
     """从输入资料提取 V1 演示答案，不调用外部模型或补充资料外知识。"""
 
     # 增加于阶段 9.4：根据资料消息生成最小的本地回答。
+    # 修改于阶段 13.2：资料不足时输出需求文档规定的固定拒答话术。
     def invoke(self, messages: Sequence[BaseMessage]) -> str:
-        """从消息中的资料提取上海住宿金额，否则返回不知道。
+        """从消息中的资料提取上海住宿金额，否则返回固定拒答话术。
 
         实现方式：拼接消息文本，仅识别资料中明确出现的“普通员工 + 金额/晚”模式；
         匹配成功时原样复述金额，其他问题统一返回不知道，确保 fallback 不会虚构
-        企业政策。该实现只用于无 API Key 的 Demo 和测试，不替代真实 DeepSeek。
+        企业政策。该实现只用于无 API Key 的 Demo 和测试，不替代真实 DeepSeek；
+        无法从资料中找到答案时返回阶段 13.2 规定的 ABSTAIN_ANSWER。
 
         参数：
             messages: LangChain BaseMessage 序列，通常包含 System 和 Human 消息。
 
         返回：
-            str：资料中识别到住宿上限时的 grounded 回答，否则返回不知道。
+            str：资料中识别到住宿上限时的 grounded 回答，否则返回固定拒答话术。
 
         异常：
             TypeError: messages 不是消息序列或元素不是 BaseMessage 时抛出。
@@ -191,7 +194,7 @@ class GroundedFallbackChatModel:
         match = re.search(r"普通员工\s+(\d+\s*元/晚)", content)
         if match:
             return f"根据提供资料，普通员工去上海出差的酒店最多可报销 {match.group(1)}。"
-        return "根据提供资料无法确定。"
+        return ABSTAIN_ANSWER
 
 
 # 增加于阶段 9.4：根据运行环境选择真实 DeepSeek 或本地 fallback。

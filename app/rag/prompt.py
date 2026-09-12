@@ -4,17 +4,24 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.prompt_values import ChatPromptValue
 
 
+# 增加于阶段 13.2：定义资料不足时对用户输出的统一拒答话术。
+ABSTAIN_ANSWER = "根据当前知识库，没有找到足够信息回答该问题。"
+
+
 # 增加于阶段 9.3：定义限制模型回答边界的固定系统规则。
-SYSTEM_PROMPT = """你是企业知识库问答助手。
+# 修改于阶段 13.2：明确资料不足时必须使用统一拒答话术。
+SYSTEM_PROMPT = f"""你是企业知识库问答助手。
 
 只能根据提供资料回答。
-没有答案就说不知道。
+没有答案就说不知道；资料不足时必须只回复：
+“{ABSTAIN_ANSWER}”
 禁止根据一般常识补充公司内部政策。
 涉及数字必须来自资料。
 不要虚构来源。"""
 
 
 # 增加于阶段 9.3：定义 LangChain System/Human 消息模板。
+# 修改于阶段 13.2：使更新后的 System Prompt 进入模型请求。
 _CHAT_PROMPT = ChatPromptTemplate.from_messages(
     [
         ("system", SYSTEM_PROMPT),
