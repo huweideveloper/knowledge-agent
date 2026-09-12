@@ -1,0 +1,12 @@
+# 增加于阶段 7.1：通过 Docker Compose 启动本地 Qdrant 服务。
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "127.0.0.1:6333:6333"
+      - "127.0.0.1:6334:6334"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+
+volumes:
+  qdrant_storage:

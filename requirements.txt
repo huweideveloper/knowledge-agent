@@ -6,3 +6,5 @@ pypdf==6.18.0
 langchain-text-splitters==1.1.2
 # 增加于阶段 6.2：LangChain FastEmbed Embedding 适配器和 ONNX 运行时。
 fastembed==0.8.0
+# 增加于阶段 7.1：Qdrant Python 客户端。
+qdrant-client==1.19.0
