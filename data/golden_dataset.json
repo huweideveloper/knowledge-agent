@@ -1,0 +1,20 @@
+[
+  {
+    "question": "普通员工去上海出差，酒店最多报多少？",
+    "expected_answer": "普通员工去上海出差的酒店最多可报销 600 元/晚。",
+    "expected_document": "travel_policy_2026",
+    "expected_page": 1
+  },
+  {
+    "question": "出差前需要什么审批？",
+    "expected_answer": "出差前需要提交出差申请并获得直属经理批准。",
+    "expected_document": "travel_policy_2026",
+    "expected_page": 1
+  },
+  {
+    "question": "员工什么时候完成安全培训？",
+    "expected_answer": "员工应在每年一季度完成安全培训。",
+    "expected_document": "safety_policy_2026",
+    "expected_page": 2
+  }
+]
