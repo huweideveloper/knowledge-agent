@@ -10,3 +10,5 @@ fastembed==0.8.0
 qdrant-client==1.19.0
 # 增加于阶段 10.2：结构化 LLM 输出和 Citation 模型。
 pydantic==2.13.5
+# 增加于阶段 11.2：SQLAlchemy 会话历史存储。
+SQLAlchemy==2.0.52
