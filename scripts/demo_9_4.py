@@ -11,10 +11,15 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from app.rag.llm import get_default_chat_model
 from app.rag.pipeline import RagPipeline
+from app.security import User
 
 
 # 增加于阶段 9.4：定义端到端流程演示问题。
 QUESTION = "普通员工去上海出差，酒店最多报多少？"
+
+
+# 修改于阶段 12.3：为默认 Qdrant Retriever 提供经过校验的当前用户。
+DEMO_USER = User(id="u001", department="engineering", role="employee")
 
 
 # 增加于阶段 9.4：执行并打印五段式 RAG Pipeline 的关键结果。
@@ -35,7 +40,7 @@ def run_demo() -> None:
         TypeError、ValueError: Pipeline 输入不符合约束时抛出。
     """
     model = get_default_chat_model()
-    result = RagPipeline(llm=model).invoke(QUESTION)
+    result = RagPipeline(llm=model, user=DEMO_USER).invoke(QUESTION)
     if not result.chunks or not result.answer:
         raise RuntimeError("RAG Pipeline 验收失败：没有资料或回答")
 

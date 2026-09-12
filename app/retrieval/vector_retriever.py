@@ -6,6 +6,8 @@ from dataclasses import dataclass
 from qdrant_client import QdrantClient
 
 from app.embedding.embeddings import embed_query
+from app.security import User
+from app.security.permissions import build_permission_filter
 from app.vectorstore.qdrant_store import (
     DEFAULT_COLLECTION_NAME,
     get_qdrant_client,
@@ -97,24 +99,28 @@ def _to_retrieved_chunk(point: object) -> RetrievedChunk:
 
 # 增加于阶段 8.1：实现从 Query 到 Top K Chunk 的向量检索。
 # 修改于阶段 8.2：将 Qdrant 结果统一转换为 RetrievedChunk 对象。
+# 修改于阶段 12.3：检索前必须应用基于 User.role 的权限过滤器。
 def search(
     query: str,
     top_k: int = 5,
     client: QdrantClient | None = None,
     collection_name: str = DEFAULT_COLLECTION_NAME,
+    user: User | None = None,
 ) -> list[RetrievedChunk]:
     """使用 Query 向量从 Qdrant 召回 Top K 个相关 Chunk。
 
-    实现方式：校验 Query 和 top_k 后，使用与文档相同的 Embedding 封装生成
-    Query 向量，再调用 Qdrant 的 query_points() 进行 Cosine 相似度检索；返回的
-    每条 ScoredPoint 由本模块转换为统一 RetrievedChunk，保留正文、分数、来源、
-    页码和业务 Metadata，不接入 LLM、过滤或重排逻辑。
+    实现方式：校验 Query、top_k、Collection 名称和 User 后，使用与文档相同的
+    Embedding 封装生成 Query 向量，先根据 User.role 构造 Qdrant Metadata Filter，
+    再调用 query_points() 进行带权限条件的 Cosine 相似度检索；返回的每条
+    ScoredPoint 由本模块转换为统一 RetrievedChunk，保留正文、分数、来源、页码和
+    业务 Metadata，不把权限控制交给 Prompt。
 
     参数：
         query: 用户自然语言问题，必须是非空字符串。
         top_k: 最多召回的 Chunk 数量，必须是正整数，默认 5。
         client: 可选的 QdrantClient；未提供时连接默认本地 Qdrant 服务。
         collection_name: 检索目标 Collection 名称，默认 enterprise_knowledge。
+        user: 当前请求用户，必须是阶段 12.1 的 User 对象；缺少用户时拒绝无过滤检索。
 
     返回：
         list[RetrievedChunk]：按 Qdrant 相似度从高到低返回的检索结果；没有匹配
@@ -122,7 +128,8 @@ def search(
 
     异常：
         TypeError: query 不是字符串或 top_k 不是整数时抛出。
-        ValueError: query 为空、top_k 不为正数或 Collection 名称为空时抛出。
+        ValueError: query 为空、top_k 不为正数、Collection 名称为空或 user 缺失时抛出。
+        TypeError: user 不是 User 对象时由权限过滤器抛出。
         RuntimeError: Qdrant Point payload 不完整时抛出。
         Exception: Embedding、Qdrant 服务不可达或检索请求失败时透传底层异常。
     """
@@ -138,6 +145,9 @@ def search(
         raise TypeError("collection_name must be a string")
     if not collection_name.strip():
         raise ValueError("collection_name must not be empty")
+    if user is None:
+        raise ValueError("user is required for permission-filtered retrieval")
+    permission_filter = build_permission_filter(user)
 
     query_vector = embed_query(query)
     if not query_vector:
@@ -148,6 +158,7 @@ def search(
         collection_name=collection_name,
         query=query_vector,
         limit=top_k,
+        query_filter=permission_filter,
         with_payload=True,
         with_vectors=False,
     )

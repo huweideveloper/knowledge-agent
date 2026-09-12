@@ -11,11 +11,16 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from app.rag.context_builder import build_context
 from app.retrieval.vector_retriever import search
+from app.security import User
 
 
 # 增加于阶段 9.1：定义用于真实检索演示的 Query 和结果数量。
 QUERY = "上海住宿报销标准"
 TOP_K = 2
+
+
+# 修改于阶段 12.3：为真实 Context Demo 提供经过校验的当前用户。
+DEMO_USER = User(id="u001", department="engineering", role="employee")
 
 
 # 增加于阶段 9.1：执行真实检索并打印拼接后的 Context。
@@ -35,7 +40,7 @@ def run_demo() -> None:
         RuntimeError: Qdrant 未返回恰好两个结果时抛出。
         TypeError、ValueError: 检索参数不符合约束时由 search() 抛出。
     """
-    results = search(query=QUERY, top_k=TOP_K)
+    results = search(query=QUERY, top_k=TOP_K, user=DEMO_USER)
     if len(results) != TOP_K:
         raise RuntimeError(f"Context Builder 验收失败：实际返回 {len(results)} 条结果")
 

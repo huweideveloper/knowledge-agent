@@ -10,6 +10,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from app.retrieval.vector_retriever import RetrievedChunk, search
+from app.security import User
 
 
 # 增加于阶段 8.4：定义覆盖各类企业制度的 20 个基线问题及正确文档 ID。
@@ -35,6 +36,10 @@ QUESTIONS = (
     ("病毒钓鱼邮件如何报告", "it_service_manual_2026"),
     ("公司账号可以借给同事使用吗", "it_service_manual_2026"),
 )
+
+
+# 修改于阶段 12.3：为 20 问题检索基线提供经过校验的当前用户。
+DEMO_USER = User(id="u001", department="engineering", role="employee")
 
 
 # 增加于阶段 8.4：读取标准检索对象对应的业务文档 ID。
@@ -82,7 +87,7 @@ def run_demo() -> None:
     """
     records: list[tuple[str, str, bool, bool, bool]] = []
     for query, expected_document_id in QUESTIONS:
-        results = search(query=query, top_k=5)
+        results = search(query=query, top_k=5, user=DEMO_USER)
         if len(results) < 5:
             raise RuntimeError(f"问题未返回 Top 5 结果：{query}")
         result_document_ids = [_get_document_id(result) for result in results]

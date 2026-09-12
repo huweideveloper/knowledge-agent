@@ -11,11 +11,16 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from app.rag.context_builder import build_context, limit_chunks
 from app.retrieval.vector_retriever import search
+from app.security import User
 
 
 # 增加于阶段 9.2：定义真实检索演示使用的 Query 和候选数量。
 QUERY = "上海住宿报销标准"
 CANDIDATE_COUNT = 7
+
+
+# 修改于阶段 12.3：为真实 Context 数量控制 Demo 提供经过校验的当前用户。
+DEMO_USER = User(id="u001", department="engineering", role="employee")
 MAX_CONTEXT_CHUNKS = 5
 
 
@@ -36,7 +41,7 @@ def run_demo() -> None:
         RuntimeError: Qdrant 返回的候选数量不足七个时抛出。
         TypeError、ValueError: 检索或数量控制参数不符合约束时抛出。
     """
-    candidates = search(query=QUERY, top_k=CANDIDATE_COUNT)
+    candidates = search(query=QUERY, top_k=CANDIDATE_COUNT, user=DEMO_USER)
     if len(candidates) != CANDIDATE_COUNT:
         raise RuntimeError(
             f"Context 长度控制验收失败：实际候选 {len(candidates)} 条"

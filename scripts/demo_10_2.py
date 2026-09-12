@@ -12,11 +12,16 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from app.rag.citations import build_cited_answer
 from app.retrieval.vector_retriever import search
+from app.security import User
 
 
 # 增加于阶段 10.2：定义真实检索和结构化回答 Demo 的输入。
 QUERY = "上海住宿报销标准"
 TOP_K = 5
+
+
+# 修改于阶段 12.3：为真实 Citation Demo 提供经过校验的当前用户。
+DEMO_USER = User(id="u001", department="engineering", role="employee")
 
 
 # 增加于阶段 10.2：执行结构化 Citation 映射并打印可信来源。
@@ -37,7 +42,7 @@ def run_demo() -> None:
         RuntimeError: Qdrant 没有返回可引用结果时抛出。
         TypeError、ValueError、pydantic.ValidationError: 输入或来源 Metadata 不完整时抛出。
     """
-    chunks = search(query=QUERY, top_k=TOP_K)
+    chunks = search(query=QUERY, top_k=TOP_K, user=DEMO_USER)
     if not chunks or not chunks[0].chunk_id:
         raise RuntimeError("Citation 映射验收失败：没有可引用的检索 Chunk")
 

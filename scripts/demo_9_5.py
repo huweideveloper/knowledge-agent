@@ -11,11 +11,16 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from app.rag.llm import get_default_chat_model
 from app.rag.pipeline import RagPipeline
+from app.security import User
 
 
 # 增加于阶段 9.5：定义需求文档规定的第一次端到端问题和验收证据。
 QUESTION = "普通员工去上海出差，酒店最多报多少？"
 EXPECTED_EVIDENCE = "600 元/晚"
+
+
+# 修改于阶段 12.3：为默认 Qdrant Retriever 提供经过校验的当前用户。
+DEMO_USER = User(id="u001", department="engineering", role="employee")
 
 
 # 增加于阶段 9.5：执行完整 RAG 并检查回答确实使用检索资料。
@@ -37,7 +42,7 @@ def run_demo() -> None:
         TypeError、ValueError: Pipeline 输入不符合约束时抛出。
     """
     model = get_default_chat_model()
-    result = RagPipeline(llm=model).invoke(QUESTION)
+    result = RagPipeline(llm=model, user=DEMO_USER).invoke(QUESTION)
     evidence_in_context = EXPECTED_EVIDENCE in result.context
     evidence_in_answer = "600" in result.answer and "元/晚" in result.answer
     if not result.chunks:

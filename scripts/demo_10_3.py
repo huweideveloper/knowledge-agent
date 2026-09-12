@@ -11,6 +11,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from app.rag.citations import CitedAnswer, build_cited_answer, verify_citation_support
 from app.retrieval.vector_retriever import search
+from app.security import User
 
 
 # 增加于阶段 10.3：定义真实检索和支持关系验证的输入。
@@ -18,9 +19,13 @@ QUERY = "上海住宿报销标准"
 TOP_K = 5
 
 
+# 修改于阶段 12.3：为真实 Citation 验证 Demo 提供经过校验的当前用户。
+DEMO_USER = User(id="u001", department="engineering", role="employee")
+
+
 # 增加于阶段 10.3：执行支持答案与错误答案的 Citation 内容验证。
 def run_demo() -> None:
-    """验证真实检索 Chunk 支持 600 元/晚答案并拒绝 800 元/晚反例。
+    """验证真实检索 Chunk 支持 600 元/晚答案并拒绝 900 元/晚反例。
 
     实现方式：从 Qdrant 获取结果，使用 10.2 映射函数生成合法 CitedAnswer，再用
     verify_citation_support() 检查数字事实；随后只篡改答案金额而保留同一 Citation，
@@ -36,7 +41,7 @@ def run_demo() -> None:
         RuntimeError: 没有可引用结果、支持答案未通过或错误答案未被拒绝时抛出。
         TypeError、ValueError: 检索或 Citation 数据不符合约束时抛出。
     """
-    chunks = search(query=QUERY, top_k=TOP_K)
+    chunks = search(query=QUERY, top_k=TOP_K, user=DEMO_USER)
     if not chunks or not chunks[0].chunk_id:
         raise RuntimeError("Citation 内容验证失败：没有可引用的检索 Chunk")
 
@@ -49,8 +54,9 @@ def run_demo() -> None:
     )
     supported_result = verify_citation_support(supported_answer, chunks)
 
+    # 修改于阶段 12.3：真实首个 Chunk 同时包含 600 和 800，改用不在其中的 900 验证拒绝。
     unsupported_answer = CitedAnswer(
-        answer="普通员工去上海出差的酒店上限为 800 元/晚。",
+        answer="普通员工去上海出差的酒店上限为 900 元/晚。",
         citations=supported_answer.citations,
     )
     unsupported_result = verify_citation_support(unsupported_answer, chunks)

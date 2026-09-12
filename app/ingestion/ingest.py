@@ -127,15 +127,16 @@ class IngestionResult:
 
 
 # 增加于阶段 7.6：集中校验单条业务 Metadata JSON 记录。
+# 修改于阶段 12.2：要求文档声明非空的 allowed_roles 权限列表。
 def _validate_metadata_record(
     record: object,
     metadata_path: Path,
 ) -> dict[str, object]:
     """校验单条 Metadata 记录并返回其字典内容。
 
-    实现方式：要求 JSON 顶层是对象，并检查 document_id 和 title 都是非空字符串；
-    该校验同时服务于目录批量入库和单文档版本更新，避免坏 Metadata 在删除旧版本
-    后才被发现。
+    实现方式：要求 JSON 顶层是对象，并检查 document_id、title 都是非空字符串，
+    同时要求 allowed_roles 是至少包含一个非空字符串的列表；该校验同时服务于
+    目录批量入库和单文档版本更新，避免缺少权限的 Metadata 在删除旧版本后才被发现。
 
     参数：
         record: 从 JSON 解码得到的任意 Python 对象。
@@ -145,7 +146,8 @@ def _validate_metadata_record(
         dict[str, object]：通过校验的业务 Metadata 字典，保留其他可选字段。
 
     异常：
-        ValueError: record 不是对象，或 document_id/title 不是非空字符串时抛出。
+        ValueError: record 不是对象，必填字段不是非空字符串，或 allowed_roles 不是
+            非空字符串列表时抛出。
     """
     if not isinstance(record, dict):
         raise ValueError(f"Metadata must be an object: {metadata_path}")
@@ -155,17 +157,25 @@ def _validate_metadata_record(
             raise ValueError(
                 f"Metadata requires non-empty string {field_name}: {metadata_path}"
             )
+    allowed_roles = record.get("allowed_roles")
+    if not isinstance(allowed_roles, list) or not allowed_roles or any(
+        not isinstance(role, str) or not role.strip() for role in allowed_roles
+    ):
+        raise ValueError(
+            f"Metadata requires non-empty string list allowed_roles: {metadata_path}"
+        )
     return record
 
 
 # 增加于阶段 7.4：读取并校验目录中的业务 Metadata JSON。
 # 修改于阶段 7.6：复用单条 Metadata 校验逻辑。
+# 修改于阶段 12.2：加载时一并校验文档 allowed_roles 权限信息。
 def _load_metadata_records(metadata_directory: Path) -> list[dict[str, object]]:
     """读取 Metadata 目录中的全部 JSON 记录。
 
-    实现方式：按文件名排序读取 JSON，校验每条记录是对象且包含 document_id
-    和 title，返回原始字典列表供后续按 PDF 文件名或标题匹配。排序保证同一
-    输入目录下匹配顺序稳定。
+    实现方式：按文件名排序读取 JSON，调用单条 Metadata 校验逻辑确认每条记录是
+    对象且包含 document_id、title 和 allowed_roles，返回原始字典列表供后续按 PDF
+    文件名或标题匹配。排序保证同一输入目录下匹配顺序稳定。
 
     参数：
         metadata_directory: Metadata JSON 所在目录，必须是目录。
@@ -175,7 +185,8 @@ def _load_metadata_records(metadata_directory: Path) -> list[dict[str, object]]:
 
     异常：
         NotADirectoryError: metadata_directory 不存在或不是目录时抛出。
-        ValueError: JSON 不是对象，或缺少 document_id/title 时抛出。
+        ValueError: JSON 不是对象，或缺少/错误的 document_id、title、allowed_roles
+            时抛出。
         json.JSONDecodeError: JSON 文件格式错误时抛出。
     """
     if not metadata_directory.is_dir():

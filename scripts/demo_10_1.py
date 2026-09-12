@@ -10,11 +10,16 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from app.retrieval.vector_retriever import RetrievedChunk, search
+from app.security import User
 
 
 # 增加于阶段 10.1：定义真实检索来源字段演示的 Query 和数量。
 QUERY = "上海住宿报销标准"
 TOP_K = 5
+
+
+# 修改于阶段 12.3：为真实来源保留 Demo 提供经过校验的当前用户。
+DEMO_USER = User(id="u001", department="engineering", role="employee")
 
 
 # 增加于阶段 10.1：检索并打印每条结果的 source、page、chunk_id。
@@ -34,7 +39,7 @@ def run_demo() -> None:
         RuntimeError: Qdrant 返回结果不足五条，或任一结果缺少来源字段时抛出。
         TypeError、ValueError: 检索参数不符合约束时由 search() 抛出。
     """
-    results = search(query=QUERY, top_k=TOP_K)
+    results = search(query=QUERY, top_k=TOP_K, user=DEMO_USER)
     if len(results) != TOP_K:
         raise RuntimeError(f"来源保留验收失败：实际返回 {len(results)} 条结果")
     if not all(

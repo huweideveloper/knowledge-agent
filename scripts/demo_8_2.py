@@ -10,11 +10,16 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from app.retrieval.vector_retriever import RetrievedChunk, search
+from app.security import User
 
 
 # 增加于阶段 8.2：定义标准检索对象 Demo 的输入 Query 和 Top K。
 QUERY = "上海住宿报销标准"
 TOP_K = 5
+
+
+# 修改于阶段 12.3：为真实检索 Demo 提供经过校验的当前用户。
+DEMO_USER = User(id="u001", department="engineering", role="employee")
 
 
 # 增加于阶段 8.2：执行检索并输出标准对象的关键字段。
@@ -35,7 +40,7 @@ def run_demo() -> None:
         RuntimeError: Qdrant 没有召回结果，或返回对象不是 RetrievedChunk 时抛出。
         TypeError、ValueError: 检索参数不符合约束时由 search() 抛出。
     """
-    results = search(query=QUERY, top_k=TOP_K)
+    results = search(query=QUERY, top_k=TOP_K, user=DEMO_USER)
     if not results:
         raise RuntimeError("标准对象验收失败：没有召回任何 Chunk")
     if not all(isinstance(result, RetrievedChunk) for result in results):

@@ -11,6 +11,7 @@ from app.rag.context_builder import MAX_CONTEXT_CHUNKS, build_context, limit_chu
 from app.rag.llm import get_default_chat_model
 from app.rag.prompt import build_chat_prompt
 from app.retrieval.vector_retriever import RetrievedChunk, search
+from app.security import User
 
 
 # 增加于阶段 9.4：定义可注入 Retriever 和模型的最小调用类型。
@@ -32,22 +33,27 @@ class RagPipeline:
     """使用 LangChain Runnable 串联检索、Context、Prompt 和聊天模型。"""
 
     # 增加于阶段 9.4：初始化 Pipeline 的依赖和 Runnable 阶段。
+    # 修改于阶段 12.3：将 User 传入默认 Retriever，确保检索前应用权限过滤。
     def __init__(
         self,
         retriever: Retriever | None = None,
         llm: object | None = None,
         top_k: int = MAX_CONTEXT_CHUNKS,
+        user: User | None = None,
     ) -> None:
         """初始化一个可使用真实依赖或测试替身的 RAG Pipeline。
 
-        实现方式：校验 top_k，默认使用阶段 8 的 search() 和按环境选择的聊天模型，
-        再为 Retriever、数量控制、Context、Prompt 和 LLM 分别创建 RunnableLambda。
-        依赖可由调用方注入，便于离线测试而不改变正式数据流。
+        实现方式：校验 top_k 和可选 User，默认使用阶段 8 的 search() 和按环境选择
+        的聊天模型，再为 Retriever、数量控制、Context、Prompt 和 LLM 分别创建
+        RunnableLambda。使用默认 Retriever 时，User 会传入 search() 触发 Qdrant
+        权限过滤；依赖可由调用方注入，便于离线测试而不改变正式数据流。
 
         参数：
             retriever: 接收 query 和 top_k 关键字参数并返回 RetrievedChunk 列表的函数。
             llm: 接收 LangChain BaseMessage 序列并返回字符串的对象或可调用对象。
             top_k: Retriever 请求的候选数量，必须为正整数；最终 Context 仍最多 5 个 Chunk。
+            user: 当前请求用户；使用默认 Qdrant Retriever 时必须提供，注入自定义
+                Retriever 时可省略以兼容离线测试。
 
         返回：
             无返回值；实例保存可执行的 RAG Runnable 阶段。
@@ -55,17 +61,23 @@ class RagPipeline:
         异常：
             TypeError: top_k 不是整数时抛出。
             ValueError: top_k 小于等于 0 时抛出。
+            TypeError: user 不是 User 对象时抛出。
         """
         if isinstance(top_k, bool) or not isinstance(top_k, int):
             raise TypeError("top_k must be an integer")
         if top_k <= 0:
             raise ValueError("top_k must be greater than zero")
+        if user is not None and not isinstance(user, User):
+            raise TypeError("user must be a User")
 
         self.retriever = retriever or search
         self.llm = llm or get_default_chat_model()
         self.top_k = top_k
+        self.user = user
         self._retrieve = RunnableLambda(
             lambda query: self.retriever(query, top_k=self.top_k)
+            if self.user is None
+            else self.retriever(query, top_k=self.top_k, user=self.user)
         )
         self._limit = RunnableLambda(
             lambda chunks: limit_chunks(chunks, max_chunks=MAX_CONTEXT_CHUNKS)

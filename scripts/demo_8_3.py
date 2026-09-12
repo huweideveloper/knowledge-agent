@@ -10,11 +10,16 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from app.retrieval.vector_retriever import search
+from app.security import User
 
 
 # 增加于阶段 8.3：定义 Top 5 输出 Demo 的输入 Query 和召回数量。
 QUERY = "上海住宿报销标准"
 TOP_K = 5
+
+
+# 修改于阶段 12.3：为真实检索 Demo 提供经过校验的当前用户。
+DEMO_USER = User(id="u001", department="engineering", role="employee")
 
 
 # 增加于阶段 8.3：执行检索并按文档格式打印 Top 5。
@@ -35,7 +40,7 @@ def run_demo() -> None:
         RuntimeError: Qdrant 返回结果少于五条时抛出。
         TypeError、ValueError: 检索参数不符合约束时由 search() 抛出。
     """
-    results = search(query=QUERY, top_k=TOP_K)
+    results = search(query=QUERY, top_k=TOP_K, user=DEMO_USER)
     if len(results) != TOP_K:
         raise RuntimeError(f"Top 5 验收失败：实际返回 {len(results)} 条结果")
 
